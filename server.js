@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("youtube-dl-exec");
+const dotenv = require("dotenv");
 const youtubedl = require("youtube-dl-exec");
 
 dotenv.config();
