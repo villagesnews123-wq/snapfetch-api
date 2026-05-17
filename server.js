@@ -28,7 +28,12 @@ app.post("/download", async (req, res) => {
       });
     }
 
-    const metadata = await ytDlpWrap.getVideoInfo(url);
+  const metadata = await youtubedl(url, {
+  dumpSingleJson: true,
+  noWarnings: true,
+  noCheckCertificates: true,
+  preferFreeFormats: true
+});
 
     const formats = metadata.formats || [];
 
