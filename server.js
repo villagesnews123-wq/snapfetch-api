@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
-const dotenv = require("dotenv");
-const YTDlpWrap = require("yt-dlp-wrap").default;
+const dotenv = require("youtube-dl-exec");
+const youtubedl = ;
 
 dotenv.config();
 
@@ -9,8 +9,6 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
-const ytDlpWrap = new YTDlpWrap("./bin/yt-dlp.exe");
 
 app.get("/", (req, res) => {
   res.json({
