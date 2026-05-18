@@ -7,7 +7,7 @@ const path = require("path");
 
 dotenv.config();
 
-const app = express();   // ← This must be at the top
+const app = express();   // ← MUST BE HERE AT THE TOP
 
 app.use(cors());
 app.use(express.json());
@@ -25,7 +25,6 @@ app.post("/download", async (req, res) => {
     const cookieFile = path.resolve(APP_ROOT, "cookies/instagram.txt");
 
     console.log("[DEBUG] URL:", url);
-    console.log("[DEBUG] Cookie exists:", fs.existsSync(cookieFile));
 
     let metadata = null;
     try {
@@ -68,8 +67,6 @@ app.post("/download", async (req, res) => {
     } else if (metadata.thumbnail) {
       items.push({ type: "image", url: metadata.thumbnail, thumbnail: metadata.thumbnail });
     }
-
-    console.log(`Extracted ${items.length} items`);
 
     if (items.length === 0) {
       return res.status(404).json({ success: false, error: "No media found" });
