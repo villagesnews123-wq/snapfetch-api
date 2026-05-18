@@ -56,17 +56,20 @@ app.post("/download", async (req, res) => {
         ? COOKIE_FILES.facebook
         : COOKIE_FILES.youtube;
 
-    console.log(
-      "[yt-dlp] cwd:",
-      process.cwd()
-    );
+    console.log("[yt-dlp] cwd:", process.cwd());
 
     console.log(
       "[yt-dlp] cookieFile:",
-      cookieFile,
-      "exists:",
-      fs.existsSync(cookieFile),
-      "size:",
+      cookieFile
+    );
+
+    console.log(
+      "[yt-dlp] exists:",
+      fs.existsSync(cookieFile)
+    );
+
+    console.log(
+      "[yt-dlp] size:",
       fs.existsSync(cookieFile)
         ? fs.statSync(cookieFile).size
         : 0
@@ -93,13 +96,11 @@ app.post("/download", async (req, res) => {
 
       extractorRetries: 5,
 
-      format:
-        "bestvideo+bestaudio/best"
+      format: "bestvideo+bestaudio/best"
     });
 
     console.log(
-      "[yt-dlp] using cookies:",
-      cookieFile
+      "[yt-dlp] extraction success"
     );
 
     const formats = metadata.formats || [];
@@ -107,7 +108,9 @@ app.post("/download", async (req, res) => {
     const bestVideo =
       formats
         .filter(
-          f => f.ext === "mp4" && f.url
+          f =>
+            f.url &&
+            f.ext === "mp4"
         )
         .sort(
           (a, b) =>
@@ -136,7 +139,8 @@ app.post("/download", async (req, res) => {
       description:
         metadata.description || "",
 
-      tags: metadata.tags || [],
+      tags:
+        metadata.tags || [],
 
       thumbnail:
         metadata.thumbnail || null,
@@ -158,35 +162,37 @@ app.post("/download", async (req, res) => {
       duration:
         metadata.duration || null,
 
-      formats:
-        formats.map(f => ({
-          format_id: f.format_id,
+      formats: formats.map(f => ({
+        format_id: f.format_id,
 
-          ext: f.ext,
+        ext: f.ext,
 
-          quality:
-            f.height ||
-            f.format_note ||
-            null,
+        quality:
+          f.height ||
+          f.format_note ||
+          null,
 
-          width: f.width || null,
+        width:
+          f.width || null,
 
-          height:
-            f.height || null,
+        height:
+          f.height || null,
 
-          filesize:
-            f.filesize || null,
+        filesize:
+          f.filesize || null,
 
-          url: f.url,
+        url: f.url,
 
-          has_audio:
-            f.acodec !== "none"
-        })),
+        has_audio:
+          f.acodec !== "none"
+      })),
 
       items:
         metadata.entries?.map(item => ({
           type:
-            item.ext === "jpg"
+            item.ext === "jpg" ||
+            item.ext === "jpeg" ||
+            item.ext === "png"
               ? "image"
               : "video",
 
@@ -196,7 +202,8 @@ app.post("/download", async (req, res) => {
             item.thumbnail || null
         })) || [],
 
-      download: bestVideo.url
+      download:
+        bestVideo.url || null
     });
 
   } catch (err) {
@@ -204,7 +211,10 @@ app.post("/download", async (req, res) => {
 
     return res.status(500).json({
       success: false,
-      error: err.message
+      error:
+        err.stderr ||
+        err.message ||
+        "Download failed"
     });
   }
 });
