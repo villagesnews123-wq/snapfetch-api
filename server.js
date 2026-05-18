@@ -75,6 +75,11 @@ app.post("/download", async (req, res) => {
         : 0
     );
 
+    console.log(
+      "[yt-dlp] url:",
+      url
+    );
+
     const metadata = await youtubedl(url, {
       dumpSingleJson: true,
 
@@ -84,6 +89,8 @@ app.post("/download", async (req, res) => {
 
       preferFreeFormats: true,
 
+      ignoreErrors: true,
+
       cookies: cookieFile,
 
       addHeader: [
@@ -91,17 +98,26 @@ app.post("/download", async (req, res) => {
       ],
 
       extractorArgs: [
-        "instagram:api_version=v1"
+        "instagram:api_version=v1",
+        "instagram:include_logged_in=true"
       ],
 
       extractorRetries: 5,
 
-      format: "bestvideo+bestaudio/best"
+      format:
+        "bestvideo+bestaudio/best"
     });
 
     console.log(
       "[yt-dlp] extraction success"
     );
+
+    if (!metadata) {
+      return res.status(500).json({
+        success: false,
+        error: "Metadata extraction failed"
+      });
+    }
 
     const formats = metadata.formats || [];
 
@@ -119,7 +135,25 @@ app.post("/download", async (req, res) => {
         )[0] ||
       formats.find(f => f.url);
 
-    if (!bestVideo) {
+    const carouselItems =
+      metadata.entries?.map(item => ({
+        type:
+          item.ext === "jpg" ||
+          item.ext === "jpeg" ||
+          item.ext === "png"
+            ? "image"
+            : "video",
+
+        url: item.url || null,
+
+        thumbnail:
+          item.thumbnail || null
+      })) || [];
+
+    if (
+      !bestVideo &&
+      carouselItems.length === 0
+    ) {
       return res.status(404).json({
         success: false,
         error:
@@ -162,55 +196,47 @@ app.post("/download", async (req, res) => {
       duration:
         metadata.duration || null,
 
-      formats: formats.map(f => ({
-        format_id: f.format_id,
+      formats:
+        formats.map(f => ({
+          format_id: f.format_id,
 
-        ext: f.ext,
+          ext: f.ext,
 
-        quality:
-          f.height ||
-          f.format_note ||
-          null,
+          quality:
+            f.height ||
+            f.format_note ||
+            null,
 
-        width:
-          f.width || null,
+          width:
+            f.width || null,
 
-        height:
-          f.height || null,
+          height:
+            f.height || null,
 
-        filesize:
-          f.filesize || null,
+          filesize:
+            f.filesize || null,
 
-        url: f.url,
+          url: f.url,
 
-        has_audio:
-          f.acodec !== "none"
-      })),
+          has_audio:
+            f.acodec !== "none"
+        })),
 
-      items:
-        metadata.entries?.map(item => ({
-          type:
-            item.ext === "jpg" ||
-            item.ext === "jpeg" ||
-            item.ext === "png"
-              ? "image"
-              : "video",
-
-          url: item.url,
-
-          thumbnail:
-            item.thumbnail || null
-        })) || [],
+      items: carouselItems,
 
       download:
-        bestVideo.url || null
+        bestVideo?.url || null
     });
 
   } catch (err) {
-    console.error(err);
+    console.error(
+      "[yt-dlp ERROR]",
+      err
+    );
 
     return res.status(500).json({
       success: false,
+
       error:
         err.stderr ||
         err.message ||
