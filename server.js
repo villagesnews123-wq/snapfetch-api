@@ -104,8 +104,7 @@ app.post("/download", async (req, res) => {
 
       extractorRetries: 5,
 
-      format:
-        "bestvideo+bestaudio/best"
+      format: "best"
     });
 
     console.log(
@@ -122,18 +121,16 @@ app.post("/download", async (req, res) => {
     const formats = metadata.formats || [];
 
     const bestVideo =
-      formats
-        .filter(
-          f =>
-            f.url &&
-            f.ext === "mp4"
-        )
-        .sort(
-          (a, b) =>
-            (b.height || 0) -
-            (a.height || 0)
-        )[0] ||
-      formats.find(f => f.url);
+      formats.find(
+        f =>
+          f.url &&
+          (
+            f.ext === "mp4" ||
+            f.ext === "jpg" ||
+            f.ext === "jpeg" ||
+            f.ext === "png"
+          )
+      ) || null;
 
     const carouselItems =
       metadata.entries?.map(item => ({
