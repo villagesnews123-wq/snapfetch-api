@@ -34,56 +34,60 @@ app.post("/download", async (req, res) => {
         ignoreErrors: true,
         cookies: cookieFile,
         addHeader: ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)"],
-        extractorArgs: { instagram: ["api_version=v1", "include_logged_in=true", "variant=android"] },
-        extractorRetries: 5,
-        retrySleep: 3,
-        format: "bestvideo+bestaudio/best",
+        extractorArgs: { instagram: ["api_version=v1", "include_logged_in=true", "variant=android", "variant=ios"] },
+        extractorRetries: 8,
+        retrySleep: 4,
       });
     } catch (e) {
       console.error("[yt-dlp Error]", e.message);
+      // Continue anyway - metadata might still be available
     }
 
     if (!metadata) {
       return res.status(500).json({ success: false, error: "Metadata extraction failed" });
     }
 
-    console.log("Metadata Keys:", Object.keys(metadata));
+    console.log("✅ Metadata Keys:", Object.keys(metadata));
 
     const formats = metadata.formats || [];
-    const bestVideo = formats.find(f => f.url && (f.ext === "mp4" || f.vcodec !== "none" || f.acodec !== "none")) || null;
+    const bestVideo = formats.find(f => f.url && (f.ext === "mp4" || f.vcodec !== "none")) || null;
 
     let items = [];
 
-    // Reels & Videos
-    if (bestVideo) {
-      items.push({
-        type: "video",
-        url: bestVideo.url,
-        thumbnail: metadata.thumbnail
-      });
-    }
-
-    // Images / Carousel
+    // === CAROUSEL / MULTI-POST ===
     if (metadata.entries?.length > 0) {
       items = metadata.entries.map(item => ({
-        type: "image",
-        url: item.url || item.display_url || item.image_versions2?.candidates?.[0]?.url || null,
+        type: (item.video_url || item.ext === "mp4") ? "video" : "image",
+        url: item.url || item.video_url || item.playable_url || item.display_url ||
+             item.image_versions2?.candidates?.[0]?.url || null,
         thumbnail: item.thumbnail || item.display_url || null
       }));
-    } else if (metadata.image_versions2?.candidates?.length > 0) {
+    } 
+    // === SINGLE PHOTO ===
+    else if (metadata.image_versions2?.candidates?.length > 0) {
       const best = [...metadata.image_versions2.candidates].sort((a, b) => (b.width || 0) - (a.width || 0))[0];
       items.push({ type: "image", url: best?.url, thumbnail: best?.url });
-    } else if (metadata.display_resources?.length > 0) {
+    } 
+    // === SIDECAR (Common in carousels) ===
+    else if (metadata.sidecar_children?.length > 0) {
+      items = metadata.sidecar_children.map(item => ({
+        type: "image",
+        url: item.image_versions2?.candidates?.[0]?.url || item.display_url,
+        thumbnail: item.image_versions2?.candidates?.[0]?.url
+      }));
+    } 
+    else if (metadata.display_resources?.length > 0) {
       items = metadata.display_resources.map(img => ({
         type: "image", url: img.src || img.url, thumbnail: img.src || img.url
       }));
-    } else if (metadata.thumbnail) {
+    } 
+    else if (metadata.thumbnail) {
       items.push({ type: "image", url: metadata.thumbnail, thumbnail: metadata.thumbnail });
     }
 
     console.log(`Extracted ${items.length} items`);
 
-    if (items.length === 0) {
+    if (items.length === 0 && !bestVideo) {
       return res.status(404).json({ success: false, error: "No media found" });
     }
 
@@ -94,8 +98,7 @@ app.post("/download", async (req, res) => {
       thumbnail: metadata.thumbnail,
       items: items,
       download: bestVideo?.url || items[0]?.url || null,
-      isCarousel: items.length > 1,
-      isVideo: !!bestVideo
+      isCarousel: items.length > 1
     });
 
   } catch (err) {
@@ -105,6 +108,4 @@ app.post("/download", async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
