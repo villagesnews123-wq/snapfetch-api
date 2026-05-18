@@ -7,8 +7,7 @@ const path = require("path");
 
 dotenv.config();
 
-const app = express();   // ← MUST BE HERE AT THE TOP
-
+const app = express();
 app.use(cors());
 app.use(express.json());
 
@@ -25,6 +24,7 @@ app.post("/download", async (req, res) => {
     const cookieFile = path.resolve(APP_ROOT, "cookies/instagram.txt");
 
     console.log("[DEBUG] URL:", url);
+    console.log("[DEBUG] Cookie size:", fs.existsSync(cookieFile) ? fs.statSync(cookieFile).size : 0);
 
     let metadata = null;
     try {
@@ -34,21 +34,28 @@ app.post("/download", async (req, res) => {
         noCheckCertificates: true,
         ignoreErrors: true,
         cookies: cookieFile,
-        addHeader: ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)"],
+        addHeader: ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
         extractorArgs: { instagram: ["api_version=v1", "include_logged_in=true", "variant=android"] },
         extractorRetries: 5,
         retrySleep: 3,
       });
-    } catch (e) {
-      console.error("[yt-dlp Error]", e.message);
+      console.log("[SUCCESS] Metadata extracted");
+    } catch (extractErr) {
+      console.error("[yt-dlp FAILED]", extractErr.message || extractErr);
+      return res.status(500).json({
+        success: false,
+        error: "Metadata extraction failed",
+        details: extractErr.message || "Unknown yt-dlp error"
+      });
     }
 
     if (!metadata) {
-      return res.status(500).json({ success: false, error: "Metadata extraction failed" });
+      return res.status(500).json({ success: false, error: "Empty metadata" });
     }
 
     console.log("Metadata Keys:", Object.keys(metadata));
 
+    // ... (image extraction logic)
     let items = [];
 
     if (metadata.entries?.length > 0) {
@@ -83,7 +90,7 @@ app.post("/download", async (req, res) => {
     });
 
   } catch (err) {
-    console.error("[ERROR]", err.message);
+    console.error("[CRITICAL ERROR]", err.message);
     return res.status(500).json({ success: false, error: err.message });
   }
 });
