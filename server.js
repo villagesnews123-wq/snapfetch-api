@@ -7,7 +7,7 @@ const path = require("path");
 
 dotenv.config();
 
-const app = express();     // ← This must be here, before any app.use or routes
+const app = express();   // ← MUST be at the top, before any routes
 
 app.use(cors());
 app.use(express.json());
@@ -52,12 +52,7 @@ app.post("/download", async (req, res) => {
       cookies: cookieFile,
       addHeader: ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
       extractorArgs: {
-        instagram: [
-          "api_version=v1",
-          "include_logged_in=true",
-          "variant=android",
-          "variant=ios"
-        ]
+        instagram: ["api_version=v1", "include_logged_in=true", "variant=android", "variant=ios"]
       },
       extractorRetries: 5,
       retrySleep: 3,
@@ -71,44 +66,27 @@ app.post("/download", async (req, res) => {
     }
 
     const formats = metadata.formats || [];
-    const bestVideo = formats.find(f => 
-      f.url && (f.ext === "mp4" || f.vcodec !== "none")
-    ) || null;
+    const bestVideo = formats.find(f => f.url && (f.ext === "mp4" || f.vcodec !== "none")) || null;
 
     let items = [];
 
-    // Carousel / Multi items
     if (metadata.entries?.length > 0) {
       items = metadata.entries.map(item => ({
         type: (item.ext === "mp4" || item.video_url || item.playable_url) ? "video" : "image",
-        url: item.url || item.video_url || item.playable_url ||
-             item.display_url || 
-             item.image_versions2?.candidates?.[0]?.url ||
-             item.display_resources?.[0]?.src || null,
-        thumbnail: item.thumbnail || item.display_url ||
-                   item.image_versions2?.candidates?.[0]?.url || null
+        url: item.url || item.video_url || item.playable_url || item.display_url ||
+             item.image_versions2?.candidates?.[0]?.url || item.display_resources?.[0]?.src || null,
+        thumbnail: item.thumbnail || item.display_url || item.image_versions2?.candidates?.[0]?.url || null
       }));
-    }
-    // Single Image Post
-    else if (metadata.image_versions2?.candidates?.length > 0) {
-      const candidates = [...metadata.image_versions2.candidates]
-        .sort((a, b) => (b.width || 0) - (a.width || 0));
-      items.push({
-        type: "image",
-        url: candidates[0]?.url || null,
-        thumbnail: candidates[0]?.url || null
-      });
-    }
-    // display_resources fallback
-    else if (metadata.display_resources?.length > 0) {
+    } else if (metadata.image_versions2?.candidates?.length > 0) {
+      const candidates = [...metadata.image_versions2.candidates].sort((a, b) => (b.width || 0) - (a.width || 0));
+      items.push({ type: "image", url: candidates[0]?.url, thumbnail: candidates[0]?.url });
+    } else if (metadata.display_resources?.length > 0) {
       items = metadata.display_resources.map(img => ({
         type: "image",
-        url: img.src || img.url || null,
-        thumbnail: img.src || img.url || null
+        url: img.src || img.url,
+        thumbnail: img.src || img.url
       }));
-    }
-    // Final fallback
-    else if (metadata.thumbnail || metadata.display_url) {
+    } else if (metadata.thumbnail || metadata.display_url) {
       items.push({
         type: "image",
         url: metadata.thumbnail || metadata.display_url,
@@ -117,7 +95,6 @@ app.post("/download", async (req, res) => {
     }
 
     if (!bestVideo && items.length === 0) {
-      console.error("No media found. Keys:", Object.keys(metadata));
       return res.status(404).json({ success: false, error: "No downloadable media found" });
     }
 
@@ -125,7 +102,6 @@ app.post("/download", async (req, res) => {
       success: true,
       platform: metadata.extractor || null,
       title: metadata.title || null,
-      description: metadata.description || "",
       thumbnail: metadata.thumbnail || null,
       items: items,
       download: bestVideo?.url || items[0]?.url || null,
@@ -133,10 +109,10 @@ app.post("/download", async (req, res) => {
       formats: formats.map(f => ({
         format_id: f.format_id,
         ext: f.ext,
-        quality: f.height || f.format_note || null,
-        width: f.width || null,
-        height: f.height || null,
-        filesize: f.filesize || null,
+        quality: f.height || f.format_note,
+        width: f.width,
+        height: f.height,
+        filesize: f.filesize,
         url: f.url,
         has_audio: f.acodec !== "none"
       }))
