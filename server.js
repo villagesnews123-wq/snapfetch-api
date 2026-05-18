@@ -24,7 +24,6 @@ app.post("/download", async (req, res) => {
     const cookieFile = path.resolve(APP_ROOT, "cookies/instagram.txt");
 
     console.log("[DEBUG] URL:", url);
-    console.log("[DEBUG] Cookie size:", fs.existsSync(cookieFile) ? fs.statSync(cookieFile).size : 0);
 
     let metadata = null;
     try {
@@ -34,30 +33,37 @@ app.post("/download", async (req, res) => {
         noCheckCertificates: true,
         ignoreErrors: true,
         cookies: cookieFile,
-        addHeader: ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"],
+        addHeader: ["User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64)"],
         extractorArgs: { instagram: ["api_version=v1", "include_logged_in=true", "variant=android"] },
         extractorRetries: 5,
         retrySleep: 3,
+        format: "bestvideo+bestaudio/best",
       });
-      console.log("[SUCCESS] Metadata extracted");
-    } catch (extractErr) {
-      console.error("[yt-dlp FAILED]", extractErr.message || extractErr);
-      return res.status(500).json({
-        success: false,
-        error: "Metadata extraction failed",
-        details: extractErr.message || "Unknown yt-dlp error"
-      });
+    } catch (e) {
+      console.error("[yt-dlp Error]", e.message);
     }
 
     if (!metadata) {
-      return res.status(500).json({ success: false, error: "Empty metadata" });
+      return res.status(500).json({ success: false, error: "Metadata extraction failed" });
     }
 
     console.log("Metadata Keys:", Object.keys(metadata));
 
-    // ... (image extraction logic)
+    const formats = metadata.formats || [];
+    const bestVideo = formats.find(f => f.url && (f.ext === "mp4" || f.vcodec !== "none" || f.acodec !== "none")) || null;
+
     let items = [];
 
+    // Reels & Videos
+    if (bestVideo) {
+      items.push({
+        type: "video",
+        url: bestVideo.url,
+        thumbnail: metadata.thumbnail
+      });
+    }
+
+    // Images / Carousel
     if (metadata.entries?.length > 0) {
       items = metadata.entries.map(item => ({
         type: "image",
@@ -75,6 +81,8 @@ app.post("/download", async (req, res) => {
       items.push({ type: "image", url: metadata.thumbnail, thumbnail: metadata.thumbnail });
     }
 
+    console.log(`Extracted ${items.length} items`);
+
     if (items.length === 0) {
       return res.status(404).json({ success: false, error: "No media found" });
     }
@@ -85,8 +93,9 @@ app.post("/download", async (req, res) => {
       title: metadata.title || "Instagram Post",
       thumbnail: metadata.thumbnail,
       items: items,
-      download: items[0]?.url || null,
-      isCarousel: items.length > 1
+      download: bestVideo?.url || items[0]?.url || null,
+      isCarousel: items.length > 1,
+      isVideo: !!bestVideo
     });
 
   } catch (err) {
