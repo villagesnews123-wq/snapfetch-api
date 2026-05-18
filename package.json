@@ -11,10 +11,13 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "axios": "^1.16.1",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "youtube-dl-exec": "^3.1.7"
+    "youtube-dl-exec": "^3.1.7",
+    "yt-dlp-wrap": "^2.3.12"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"
