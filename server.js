@@ -56,7 +56,7 @@ app.post("/download", async (req, res) => {
         ? COOKIE_FILES.facebook
         : COOKIE_FILES.youtube;
 
-    console.log("[yt-dlp] cwd:", process.cwd());
+    console.log("[yt-dlp] url:", url);
 
     console.log(
       "[yt-dlp] cookieFile:",
@@ -73,11 +73,6 @@ app.post("/download", async (req, res) => {
       fs.existsSync(cookieFile)
         ? fs.statSync(cookieFile).size
         : 0
-    );
-
-    console.log(
-      "[yt-dlp] url:",
-      url
     );
 
     const metadata = await youtubedl(url, {
@@ -97,12 +92,17 @@ app.post("/download", async (req, res) => {
         "User-Agent: Mozilla/5.0"
       ],
 
-      extractorArgs: [
-        "instagram:api_version=v1",
-        "instagram:include_logged_in=true"
-      ],
+      extractorArgs: {
+        instagram: [
+          "api_version=v1",
+          "include_logged_in=true",
+          "variant=android"
+        ]
+      },
 
       extractorRetries: 5,
+
+      retrySleep: 3,
 
       format: "best"
     });
@@ -126,30 +126,104 @@ app.post("/download", async (req, res) => {
           f.url &&
           (
             f.ext === "mp4" ||
-            f.ext === "jpg" ||
-            f.ext === "jpeg" ||
-            f.ext === "png"
+            f.vcodec !== "none"
           )
       ) || null;
 
-    const carouselItems =
-      metadata.entries?.map(item => ({
-        type:
-          item.ext === "jpg" ||
-          item.ext === "jpeg" ||
-          item.ext === "png"
-            ? "image"
-            : "video",
+    let items = [];
 
-        url: item.url || null,
+    // Carousel / multi-item posts
+    if (metadata.entries?.length > 0) {
+      items = metadata.entries.map(item => ({
+        type:
+          item.ext === "mp4" ||
+          item.video_url
+            ? "video"
+            : "image",
+
+        url:
+          item.url ||
+          item.video_url ||
+          item.playable_url ||
+          item.display_url ||
+          item.thumbnail ||
+          item.image_versions2?.candidates?.[0]?.url ||
+          item.display_resources?.[0]?.src ||
+          null,
 
         thumbnail:
-          item.thumbnail || null
-      })) || [];
+          item.thumbnail ||
+          item.display_url ||
+          item.image_versions2?.candidates?.[0]?.url ||
+          null
+      }));
+    }
+
+    // Single image post
+    else if (
+      metadata.image_versions2?.candidates?.length > 0
+    ) {
+      const candidates =
+        metadata.image_versions2.candidates.sort(
+          (a, b) =>
+            (b.width || 0) -
+            (a.width || 0)
+        );
+
+      items.push({
+        type: "image",
+
+        url:
+          candidates[0]?.url || null,
+
+        thumbnail:
+          candidates[0]?.url || null
+      });
+    }
+
+    // display_resources fallback
+    else if (
+      metadata.display_resources?.length > 0
+    ) {
+      items =
+        metadata.display_resources.map(img => ({
+          type: "image",
+
+          url:
+            img.src ||
+            img.url ||
+            null,
+
+          thumbnail:
+            img.src ||
+            img.url ||
+            null
+        }));
+    }
+
+    // generic fallback
+    else if (
+      metadata.thumbnail ||
+      metadata.display_url
+    ) {
+      items.push({
+        type: "image",
+
+        url:
+          metadata.thumbnail ||
+          metadata.display_url ||
+          null,
+
+        thumbnail:
+          metadata.thumbnail ||
+          metadata.display_url ||
+          null
+      });
+    }
 
     if (
       !bestVideo &&
-      carouselItems.length === 0
+      items.length === 0
     ) {
       return res.status(404).json({
         success: false,
@@ -219,10 +293,15 @@ app.post("/download", async (req, res) => {
             f.acodec !== "none"
         })),
 
-      items: carouselItems,
+      items: items,
 
       download:
-        bestVideo?.url || null
+        bestVideo?.url ||
+        items[0]?.url ||
+        null,
+
+      isCarousel:
+        items.length > 1
     });
 
   } catch (err) {
