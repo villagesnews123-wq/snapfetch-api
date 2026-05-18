@@ -92,13 +92,11 @@ app.post("/download", async (req, res) => {
         "User-Agent: Mozilla/5.0"
       ],
 
-      extractorArgs: {
-        instagram: [
-          "api_version=v1",
-          "include_logged_in=true",
-          "variant=android"
-        ]
-      },
+      extractorArgs: [
+        "instagram:api_version=v1",
+        "instagram:include_logged_in=true",
+        "instagram:variant=android"
+      ],
 
       extractorRetries: 5,
 
@@ -132,7 +130,7 @@ app.post("/download", async (req, res) => {
 
     let items = [];
 
-    // Carousel / multi-item posts
+    // CAROUSEL POSTS
     if (metadata.entries?.length > 0) {
       items = metadata.entries.map(item => ({
         type:
@@ -159,7 +157,7 @@ app.post("/download", async (req, res) => {
       }));
     }
 
-    // Single image post
+    // SINGLE IMAGE POSTS
     else if (
       metadata.image_versions2?.candidates?.length > 0
     ) {
@@ -181,7 +179,7 @@ app.post("/download", async (req, res) => {
       });
     }
 
-    // display_resources fallback
+    // STORIES / FALLBACK
     else if (
       metadata.display_resources?.length > 0
     ) {
@@ -201,7 +199,7 @@ app.post("/download", async (req, res) => {
         }));
     }
 
-    // generic fallback
+    // LAST FALLBACK
     else if (
       metadata.thumbnail ||
       metadata.display_url
