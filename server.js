@@ -1,3 +1,24 @@
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const youtubedl = require("youtube-dl-exec");
+const fs = require("fs");
+const path = require("path");
+
+dotenv.config();
+
+const app = express();     // ← This must be here, before any app.use or routes
+
+app.use(cors());
+app.use(express.json());
+
+app.get("/", (req, res) => {
+  res.json({
+    success: true,
+    message: "SnapFetch API Running"
+  });
+});
+
 app.post("/download", async (req, res) => {
   try {
     const { url } = req.body;
@@ -56,18 +77,19 @@ app.post("/download", async (req, res) => {
 
     let items = [];
 
-    // Stronger extraction for images & carousels
+    // Carousel / Multi items
     if (metadata.entries?.length > 0) {
       items = metadata.entries.map(item => ({
         type: (item.ext === "mp4" || item.video_url || item.playable_url) ? "video" : "image",
-        url: item.url || item.video_url || item.playable_url || 
+        url: item.url || item.video_url || item.playable_url ||
              item.display_url || 
              item.image_versions2?.candidates?.[0]?.url ||
              item.display_resources?.[0]?.src || null,
-        thumbnail: item.thumbnail || item.display_url || 
+        thumbnail: item.thumbnail || item.display_url ||
                    item.image_versions2?.candidates?.[0]?.url || null
       }));
-    } 
+    }
+    // Single Image Post
     else if (metadata.image_versions2?.candidates?.length > 0) {
       const candidates = [...metadata.image_versions2.candidates]
         .sort((a, b) => (b.width || 0) - (a.width || 0));
@@ -76,14 +98,16 @@ app.post("/download", async (req, res) => {
         url: candidates[0]?.url || null,
         thumbnail: candidates[0]?.url || null
       });
-    } 
+    }
+    // display_resources fallback
     else if (metadata.display_resources?.length > 0) {
       items = metadata.display_resources.map(img => ({
         type: "image",
         url: img.src || img.url || null,
         thumbnail: img.src || img.url || null
       }));
-    } 
+    }
+    // Final fallback
     else if (metadata.thumbnail || metadata.display_url) {
       items.push({
         type: "image",
@@ -93,11 +117,8 @@ app.post("/download", async (req, res) => {
     }
 
     if (!bestVideo && items.length === 0) {
-      console.error("No media found. Metadata keys:", Object.keys(metadata));
-      return res.status(404).json({ 
-        success: false, 
-        error: "No downloadable media found" 
-      });
+      console.error("No media found. Keys:", Object.keys(metadata));
+      return res.status(404).json({ success: false, error: "No downloadable media found" });
     }
 
     return res.json({
@@ -128,4 +149,9 @@ app.post("/download", async (req, res) => {
       error: err.stderr || err.message || "Download failed"
     });
   }
+});
+
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`✅ Server running on port ${PORT}`);
 });
