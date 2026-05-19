@@ -4,37 +4,49 @@ const dotenv = require("dotenv");
 const youtubedl = require("youtube-dl-exec");
 const fs = require("fs");
 const path = require("path");
+
 const youtubeTranscript =
   require("./routes/youtubeTranscript");
+
+const audioToText =
+  require("./routes/audioToText");
 
 dotenv.config();
 
 const app = express();
 
 app.use(cors());
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
+
   res.json({
     success: true,
     message: "SnapFetch API Running"
   });
+
 });
 
 app.post("/download", async (req, res) => {
+
   try {
+
     const { url } = req.body;
 
     if (!url) {
+
       return res.status(400).json({
         success: false,
         error: "URL required"
       });
+
     }
 
     const APP_ROOT = process.cwd();
 
     const COOKIE_FILES = {
+
       instagram: path.resolve(
         APP_ROOT,
         "cookies/instagram.txt"
@@ -49,6 +61,7 @@ app.post("/download", async (req, res) => {
         APP_ROOT,
         "cookies/youtube.txt"
       )
+
     };
 
     const isInstagram =
@@ -70,6 +83,7 @@ app.post("/download", async (req, res) => {
     console.log("[yt-dlp] url:", url);
 
     const options = {
+
       dumpSingleJson: true,
 
       noWarnings: true,
@@ -90,6 +104,7 @@ app.post("/download", async (req, res) => {
 
       format:
         "bestvideo+bestaudio/best"
+
     };
 
     // Only apply cookies if file exists
@@ -97,16 +112,20 @@ app.post("/download", async (req, res) => {
       cookieFile &&
       fs.existsSync(cookieFile)
     ) {
+
       options.cookies = cookieFile;
+
     }
 
     // ONLY Instagram gets extractorArgs
     if (isInstagram) {
+
       options.extractorArgs = [
         "instagram:api_version=v1",
         "instagram:include_logged_in=true",
         "instagram:variant=android"
       ];
+
     }
 
     const metadata =
@@ -117,10 +136,12 @@ app.post("/download", async (req, res) => {
     );
 
     if (!metadata) {
+
       return res.status(500).json({
         success: false,
         error: "Metadata extraction failed"
       });
+
     }
 
     const formats =
@@ -137,14 +158,17 @@ app.post("/download", async (req, res) => {
       ) || formats[0];
 
     if (!bestVideo?.url) {
+
       return res.status(404).json({
         success: false,
         error:
           "No downloadable video found"
       });
+
     }
 
     return res.json({
+
       success: true,
 
       platform:
@@ -173,6 +197,7 @@ app.post("/download", async (req, res) => {
 
       formats:
         formats.map(f => ({
+
           format_id: f.format_id,
 
           ext: f.ext,
@@ -195,6 +220,7 @@ app.post("/download", async (req, res) => {
 
           has_audio:
             f.acodec !== "none"
+
         })),
 
       items: [
@@ -212,34 +238,48 @@ app.post("/download", async (req, res) => {
         bestVideo.url || null,
 
       isCarousel: false
+
     });
 
   } catch (err) {
+
     console.error(
       "[yt-dlp ERROR]",
       err
     );
 
     return res.status(500).json({
+
       success: false,
 
       error:
         err.stderr ||
         err.message ||
         "Download failed"
+
     });
+
   }
+
 });
+
 app.use(
   "/youtube-transcript",
   youtubeTranscript
+);
+
+app.use(
+  "/audio-to-text",
+  audioToText
 );
 
 const PORT =
   process.env.PORT || 5000;
 
 app.listen(PORT, () => {
+
   console.log(
     `Server running on port ${PORT}`
   );
+
 });
