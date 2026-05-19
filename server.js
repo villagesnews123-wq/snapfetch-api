@@ -49,33 +49,25 @@ app.post("/download", async (req, res) => {
       )
     };
 
+    const isInstagram =
+      /instagram\.com|instagr\.am/i.test(url);
+
+    const isFacebook =
+      /facebook\.com|fb\.watch/i.test(url);
+
+    const isYoutube =
+      /youtube\.com|youtu\.be/i.test(url);
+
     const cookieFile =
-      /instagram\.com|instagr\.am/i.test(url)
+      isInstagram
         ? COOKIE_FILES.instagram
-        : /facebook\.com|fb\.watch/i.test(url)
+        : isFacebook
         ? COOKIE_FILES.facebook
         : COOKIE_FILES.youtube;
 
     console.log("[yt-dlp] url:", url);
 
-    console.log(
-      "[yt-dlp] cookieFile:",
-      cookieFile
-    );
-
-    console.log(
-      "[yt-dlp] exists:",
-      fs.existsSync(cookieFile)
-    );
-
-    console.log(
-      "[yt-dlp] size:",
-      fs.existsSync(cookieFile)
-        ? fs.statSync(cookieFile).size
-        : 0
-    );
-
-    const metadata = await youtubedl(url, {
+    const options = {
       dumpSingleJson: true,
 
       noWarnings: true,
@@ -86,25 +78,37 @@ app.post("/download", async (req, res) => {
 
       ignoreErrors: true,
 
-      cookies: cookieFile,
-
       addHeader: [
         "User-Agent: Mozilla/5.0"
       ],
 
-      extractorArgs: [
-        "instagram:api_version=v1",
-        "instagram:include_logged_in=true",
-        "instagram:variant=android"
-      ],
+      extractorRetries: 3,
 
-      extractorRetries: 5,
-
-      retrySleep: 3,
+      retrySleep: 2,
 
       format:
         "bestvideo+bestaudio/best"
-    });
+    };
+
+    // Only apply cookies if file exists
+    if (
+      cookieFile &&
+      fs.existsSync(cookieFile)
+    ) {
+      options.cookies = cookieFile;
+    }
+
+    // ONLY Instagram gets extractorArgs
+    if (isInstagram) {
+      options.extractorArgs = [
+        "instagram:api_version=v1",
+        "instagram:include_logged_in=true",
+        "instagram:variant=android"
+      ];
+    }
+
+    const metadata =
+      await youtubedl(url, options);
 
     console.log(
       "[yt-dlp] extraction success"
@@ -117,7 +121,8 @@ app.post("/download", async (req, res) => {
       });
     }
 
-    const formats = metadata.formats || [];
+    const formats =
+      metadata.formats || [];
 
     const bestVideo =
       formats.find(
@@ -127,26 +132,15 @@ app.post("/download", async (req, res) => {
             f.ext === "mp4" ||
             f.vcodec !== "none"
           )
-      ) || null;
+      ) || formats[0];
 
     if (!bestVideo?.url) {
       return res.status(404).json({
         success: false,
         error:
-          "Only video/reel downloads are currently supported"
+          "No downloadable video found"
       });
     }
-
-    const items = [];
-
-    items.push({
-      type: "video",
-
-      url: bestVideo.url,
-
-      thumbnail:
-        metadata.thumbnail || null
-    });
 
     return res.json({
       success: true,
@@ -160,25 +154,20 @@ app.post("/download", async (req, res) => {
       description:
         metadata.description || "",
 
-      tags:
-        metadata.tags || [],
-
       thumbnail:
         metadata.thumbnail || null,
 
-      thumbnail_hd:
-        metadata.thumbnail ||
-        (metadata.thumbnails?.length
-          ? metadata.thumbnails[
-              metadata.thumbnails.length - 1
-            ].url
-          : null),
-
-      thumbnails:
-        metadata.thumbnails || [],
-
       duration:
         metadata.duration || null,
+
+      uploader:
+        metadata.uploader || null,
+
+      view_count:
+        metadata.view_count || null,
+
+      like_count:
+        metadata.like_count || null,
 
       formats:
         formats.map(f => ({
@@ -206,7 +195,16 @@ app.post("/download", async (req, res) => {
             f.acodec !== "none"
         })),
 
-      items: items,
+      items: [
+        {
+          type: "video",
+
+          url: bestVideo.url,
+
+          thumbnail:
+            metadata.thumbnail || null
+        }
+      ],
 
       download:
         bestVideo.url || null,
