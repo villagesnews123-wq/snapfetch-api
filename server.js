@@ -4,6 +4,8 @@ const dotenv = require("dotenv");
 const youtubedl = require("youtube-dl-exec");
 const fs = require("fs");
 const path = require("path");
+const youtubeTranscript =
+  require("./routes/youtubeTranscript");
 
 dotenv.config();
 
@@ -228,6 +230,10 @@ app.post("/download", async (req, res) => {
     });
   }
 });
+app.use(
+  "/youtube-transcript",
+  youtubeTranscript
+);
 
 const PORT =
   process.env.PORT || 5000;
