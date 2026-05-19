@@ -1,5 +1,6 @@
 const express = require("express");
 const youtubedl = require("youtube-dl-exec");
+const path = require("path");
 
 const router = express.Router();
 
@@ -16,16 +17,43 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // YouTube cookies file
+    const COOKIE_FILE = path.resolve(
+      process.cwd(),
+      "cookies/youtube.txt"
+    );
+
+    console.log(
+      "[Transcript] Using cookies:",
+      COOKIE_FILE
+    );
+
+    // Fetch video + subtitles
     const info = await youtubedl(url, {
+
       dumpSingleJson: true,
+
       skipDownload: true,
+
       writeAutoSub: true,
+
       writeSub: true,
+
       subLang: "en",
+
       subFormat: "json3",
-      noWarnings: true
+
+      noWarnings: true,
+
+      cookies: COOKIE_FILE,
+
+      addHeader: [
+        "User-Agent: Mozilla/5.0"
+      ]
+
     });
 
+    // Captions
     const subtitles =
       info.automatic_captions ||
       info.subtitles;
@@ -37,6 +65,7 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // English subtitles
     const english =
       subtitles.en ||
       subtitles["en-US"] ||
@@ -49,17 +78,26 @@ router.post("/", async (req, res) => {
       });
     }
 
+    // Return subtitle URL
     return res.json({
       success: true,
+
+      title: info.title || "",
+
       transcriptUrl: english[0].url
+
     });
 
   } catch (err) {
 
-    console.error(err);
+    console.error(
+      "[Transcript ERROR]",
+      err
+    );
 
     return res.status(500).json({
       success: false,
+
       error:
         err.stderr ||
         err.message ||
