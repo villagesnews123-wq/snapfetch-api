@@ -107,7 +107,7 @@ app.post("/download", async (req, res) => {
 
     };
 
-    // Only apply cookies if file exists
+    // apply cookies if exists
     if (
       cookieFile &&
       fs.existsSync(cookieFile)
@@ -117,7 +117,7 @@ app.post("/download", async (req, res) => {
 
     }
 
-    // ONLY Instagram gets extractorArgs
+    // instagram specific args
     if (isInstagram) {
 
       options.extractorArgs = [
@@ -263,14 +263,24 @@ app.post("/download", async (req, res) => {
 
 });
 
+// youtube transcript route
 app.use(
   "/youtube-transcript",
   youtubeTranscript
 );
 
+// audio transcription route
 app.use(
   "/audio-to-text",
   audioToText
+);
+
+// uploads folder static access
+app.use(
+  "/uploads",
+  express.static(
+    path.join(__dirname, "uploads")
+  )
 );
 
 const PORT =
