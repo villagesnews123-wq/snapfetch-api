@@ -1,0 +1,36 @@
+{
+  "name": "snapfetch-api-v2",
+  "version": "2.0.0",
+  "description": "Universal Social Media Downloader API",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "update-ytdlp": "npx yt-dlp -U"
+  },
+  "keywords": [
+    "instagram",
+    "facebook",
+    "youtube",
+    "twitter",
+    "linkedin",
+    "tiktok",
+    "downloader",
+    "api"
+  ],
+  "author": "Praveen",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^4.21.2",
+    "groq-sdk": "^0.30.0",
+    "multer": "^2.0.2",
+    "youtube-dl-exec": "^3.0.24"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
