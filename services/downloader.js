@@ -8,12 +8,18 @@ module.exports = async function downloadMedia(url) {
   const COOKIE_FILES = {
     instagram: path.join(APP_ROOT, "cookies", "instagram.txt"),
     facebook: path.join(APP_ROOT, "cookies", "facebook.txt"),
-    youtube: path.join(APP_ROOT, "cookies", "youtube.txt")
+    youtube: path.join(APP_ROOT, "cookies", "youtube.txt"),
+    twitter: path.join(APP_ROOT, "cookies", "twitter.txt"),
+    linkedin: path.join(APP_ROOT, "cookies", "linkedin.txt"),
+    pinterest: path.join(APP_ROOT, "cookies", "pinterest.txt")
   };
 
   const isInstagram = /instagram\.com|instagr\.am/i.test(url);
   const isFacebook = /facebook\.com|fb\.watch/i.test(url);
   const isYoutube = /youtube\.com|youtu\.be/i.test(url);
+  const isTwitter = /twitter\.com|x\.com/i.test(url);
+  const isLinkedIn = /linkedin\.com/i.test(url);
+  const isPinterest = /pinterest\.com/i.test(url);
 
   let cookieFile = null;
 
@@ -23,17 +29,32 @@ module.exports = async function downloadMedia(url) {
     cookieFile = COOKIE_FILES.facebook;
   } else if (isYoutube) {
     cookieFile = COOKIE_FILES.youtube;
+  } else if (isTwitter) {
+    cookieFile = COOKIE_FILES.twitter;
+  } else if (isLinkedIn) {
+    cookieFile = COOKIE_FILES.linkedin;
+  } else if (isPinterest) {
+    cookieFile = COOKIE_FILES.pinterest;
   }
 
   console.log("");
   console.log("========================================");
-  console.log("Platform :", isInstagram
-    ? "Instagram"
-    : isFacebook
-    ? "Facebook"
-    : isYoutube
-    ? "YouTube"
-    : "Other");
+  console.log(
+    "Platform :",
+    isInstagram
+      ? "Instagram"
+      : isFacebook
+      ? "Facebook"
+      : isYoutube
+      ? "YouTube"
+      : isTwitter
+      ? "Twitter"
+      : isLinkedIn
+      ? "LinkedIn"
+      : isPinterest
+      ? "Pinterest"
+      : "Other"
+  );
   console.log("URL      :", url);
   console.log("Cookie   :", cookieFile);
   console.log("Exists   :", cookieFile ? fs.existsSync(cookieFile) : false);
