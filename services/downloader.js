@@ -11,7 +11,7 @@ module.exports = async function downloadMedia(url) {
     youtube: path.join(APP_ROOT, "cookies", "youtube.txt"),
     twitter: path.join(APP_ROOT, "cookies", "twitter.txt"),
     linkedin: path.join(APP_ROOT, "cookies", "linkedin.txt"),
-    pinterest: path.join(APP_ROOT, "cookies", "pinterest.txt")
+    pinterest: path.join(APP_ROOT, "cookies", "pinterest.txt"),
   };
 
   const isInstagram = /instagram\.com|instagr\.am/i.test(url);
@@ -75,10 +75,13 @@ module.exports = async function downloadMedia(url) {
 
     socketTimeout: 60,
 
-    format: "bv*+ba/b",
+    // Platform-specific format selection
+    format: isYoutube
+      ? "bestvideo+bestaudio/best"
+      : "bv*+ba/b",
 
     userAgent:
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36"
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/138.0 Safari/537.36",
   };
 
   if (cookieFile && fs.existsSync(cookieFile)) {
@@ -115,20 +118,17 @@ module.exports = async function downloadMedia(url) {
 
   const bestVideo =
     formats.find(
-      f =>
+      (f) =>
         f.url &&
         f.vcodec !== "none" &&
         f.acodec !== "none"
     ) ||
     formats.find(
-      f =>
+      (f) =>
         f.url &&
         f.vcodec !== "none"
     ) ||
-    formats.find(
-      f =>
-        f.url
-    );
+    formats.find((f) => f.url);
 
   if (!bestVideo) {
     throw new Error("No downloadable format found.");
@@ -155,7 +155,7 @@ module.exports = async function downloadMedia(url) {
 
     download: bestVideo.url,
 
-    formats: formats.map(f => ({
+    formats: formats.map((f) => ({
       format_id: f.format_id,
       ext: f.ext,
       quality: f.height || f.format_note,
@@ -163,7 +163,7 @@ module.exports = async function downloadMedia(url) {
       height: f.height,
       filesize: f.filesize,
       has_audio: f.acodec !== "none",
-      url: f.url
-    }))
+      url: f.url,
+    })),
   };
 };
