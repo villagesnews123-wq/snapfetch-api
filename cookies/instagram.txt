@@ -7,9 +7,9 @@
 .instagram.com	TRUE	/	TRUE	1818160735	mid	ak-WXgALAAEx6kjLVunu3xhfqjKB
 .instagram.com	TRUE	/	TRUE	1818805914	ps_l	1
 .instagram.com	TRUE	/	TRUE	1818805914	ps_n	1
-.instagram.com	TRUE	/	TRUE	1785198489	wd	1536x695
-.instagram.com	TRUE	/	TRUE	1785198489	dpr	1.25
-.instagram.com	TRUE	/	TRUE	1819153711	csrftoken	x27fNEruNkdq698a7uTAhzBM8BB5sNmK
-.instagram.com	TRUE	/	TRUE	1792369711	ds_user_id	72932733300
-.instagram.com	TRUE	/	TRUE	1816129682	sessionid	72932733300%3A9dQHkDFFSs90qW%3A20%3AAYhz7M_tHtHsSwLtG2FVGQekKgjTVlzPyoV9peUhlQ
-.instagram.com	TRUE	/	TRUE	0	rur	"PRN\05472932733300\0541816129711:01ff436c5a90d8d4ce0db9566ee59e27a04db79a1de06bc1fd5aa79387a3ffa169f02eb3"
+.instagram.com	TRUE	/	TRUE	1785202386	dpr	1.25
+.instagram.com	TRUE	/	TRUE	1819279377	csrftoken	x27fNEruNkdq698a7uTAhzBM8BB5sNmK
+.instagram.com	TRUE	/	TRUE	1792495377	ds_user_id	72932733300
+.instagram.com	TRUE	/	TRUE	1785324160	wd	1920x911
+.instagram.com	TRUE	/	TRUE	1816255363	sessionid	72932733300%3A9dQHkDFFSs90qW%3A20%3AAYhtdyb40h_YN0w2QdXuEU6XVz_sZ5bCR5SElhadzw
+.instagram.com	TRUE	/	TRUE	0	rur	"PRN\05472932733300\0541816255377:01ff2400f630387d640ccb5b9da536c9bd8c6bb10b590e785c4fa825d177d68b0a140054"
